@@ -8,7 +8,7 @@ export class Application {
   public startServer = () => {
     this.webSocketServer.on('connection', (webSocket) => {
       webSocket.on('message', (data) => {
-        webSocket.send(JSON.stringify(data));
+        webSocket.send(data.toString('utf8'));
       });
     });
   };
