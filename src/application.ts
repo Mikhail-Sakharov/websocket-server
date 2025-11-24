@@ -1,8 +1,14 @@
+import {createServer} from 'https';
 import {WebSocketServer, WebSocket} from 'ws';
+import {readFileSync} from 'fs';
 
 export class Application {
   constructor(
-    private readonly webSocketServer = new WebSocketServer({port: Number(process.env.PORT)}),
+    private readonly server = process.env.CERT && process.env.KEY ? createServer({
+      cert: readFileSync(process.env.CERT),
+      key: readFileSync(process.env.KEY)
+    }) : null,
+    private readonly webSocketServer = new WebSocketServer(this.server ? {server: this.server, port: Number(process.env.PORT)} : {port: Number(process.env.PORT)}),
     private readonly clients: Set<WebSocket> = new Set()
   ) {}
 
