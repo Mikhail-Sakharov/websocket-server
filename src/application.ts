@@ -39,7 +39,7 @@ export class Application {
         try {
           const parsed = JSON.parse(payload);
 
-          // ========== ЕСЛИ ЭТО ДАННЫЕ ОТ ESP32 (содержит id и t) ==========
+          // ========== 1. ЕСЛИ ЭТО ДАННЫЕ ОТ ESP32 (содержит id и t) ==========
           if (parsed.id && parsed.t !== undefined) {
             // Регистрируем теплицу
             this.greenhouses.set(parsed.id, webSocket);
@@ -67,11 +67,11 @@ export class Application {
             }
           }
 
-          // ========== ЕСЛИ ЭТО КОМАНДА ОТ ФРОНТЕНДА (содержит cmd и targetId) ==========
+          // ========== 2. ЕСЛИ ЭТО КОМАНДА ОТ ФРОНТЕНДА (содержит cmd и targetId) ==========
           if (parsed.cmd && parsed.targetId) {
             const targetWs = this.greenhouses.get(parsed.targetId);
             if (targetWs && targetWs.readyState === WebSocket.OPEN) {
-              targetWs.send(JSON.stringify({ cmd: parsed.cmd }));
+              targetWs.send(JSON.stringify({cmd: parsed.cmd}));
               console.log(`Команда "${parsed.cmd}" отправлена теплице ${parsed.targetId}`);
             } else {
               console.log(`Теплица ${parsed.targetId} не подключена`);
@@ -81,6 +81,17 @@ export class Application {
                 message: `Теплица ${parsed.targetId} не подключена`
               }));
             }
+          }
+
+          // ========== 3. СТАТУСНОЕ СООБЩЕНИЕ (мгновенное обновление) ==========
+          if (parsed.type === 'status_update' && parsed.data) {
+            // Ретранслируем всем клиентам (фронтенд)
+            for (const client of this.clients) {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(payload);
+              }
+            }
+            console.log('Ретранслировано статусное сообщение:', payload);
           }
 
         } catch (e) {
