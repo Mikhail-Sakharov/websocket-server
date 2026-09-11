@@ -72,11 +72,18 @@ export class Application {
             const targetWs = this.greenhouses.get(parsed.targetId);
 
             if (targetWs && targetWs.readyState === WebSocket.OPEN) {
-              targetWs.send(JSON.stringify({cmd: parsed.cmd}));
-              console.log(`Команда "${parsed.cmd}" отправлена теплице ${parsed.targetId}`);
+              // 1. Создаем копию пришедшего объекта, чтобы не испортить исходные данные
+              const messageToDevice = {...parsed};
+
+              // 2. Удаляем targetId, так как ESP32 он не требуется (опционально, но чистит трафик)
+              delete messageToDevice.targetId;
+
+              // 3. Отправляем ВЕСЬ объект со всеми параметрами, если они есть
+              targetWs.send(JSON.stringify(messageToDevice));
+
+              console.log(`Команда "${parsed.cmd}" со всеми параметрами отправлена теплице ${parsed.targetId}`);
             } else {
               console.log(`Теплица ${parsed.targetId} не подключена`);
-              // Можно отправить ответ фронтенду об ошибке
               webSocket.send(JSON.stringify({
                 status: 'error',
                 message: `Теплица ${parsed.targetId} не подключена`
