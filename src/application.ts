@@ -70,6 +70,7 @@ export class Application {
           // ========== 2. ЕСЛИ ЭТО КОМАНДА ОТ ФРОНТЕНДА (содержит cmd и targetId) ==========
           if (parsed.cmd && parsed.targetId) {
             const targetWs = this.greenhouses.get(parsed.targetId);
+
             if (targetWs && targetWs.readyState === WebSocket.OPEN) {
               targetWs.send(JSON.stringify({cmd: parsed.cmd}));
               console.log(`Команда "${parsed.cmd}" отправлена теплице ${parsed.targetId}`);
@@ -92,6 +93,17 @@ export class Application {
               }
             }
             console.log('Ретранслировано статусное сообщение:', payload);
+          }
+
+          // ========== 4. ПАРАМЕТРЫ ОТ ESP32 (при старте или по get_params) ==========
+          if (parsed.status === 'params' && parsed.data) {
+            // Ретранслируем всем клиентам (фронтенд)
+            for (const client of this.clients) {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(payload);
+              }
+            }
+            console.log('Ретранслированы параметры:', payload);
           }
 
         } catch (e) {
